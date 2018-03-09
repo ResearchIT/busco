@@ -8,33 +8,39 @@ MAINTAINER baber@iastate.edu
 SPACK_ROOT=/opt/spack
 export SPACK_ROOT
 export PATH=$SPACK_ROOT/bin:$PATH
+source /etc/profile.d/modules.sh
 source $SPACK_ROOT/share/spack/setup-env.sh
-module load busco
-
-%runscript
-spack find
+module load busco-3.0.1-gcc-4.8.5-cafwtkz
 
 %post
 export SPACK_ROOT=/opt/spack
 export SPACK_ROOT
 export PATH=$SPACK_ROOT/bin:$PATH
 
-yum -y install git python
-yum -y install gcc gcc-c++ gfortran curl
-yum -y install gnupg2 sed patch
-yum -y install file unzip gzip bzip2
-yum -y install findutils
-yum -y install make
-yum -y install vim
+yum -y install git python \
+gcc gcc-c++ gcc-gfortran curl \
+gnupg2 sed patch \
+unzip gzip bzip2 \
+findutils make vim \
+environment-modules
+
 yum clean all
 
-git clone https://github.com/researchit/spack.git $SPACK_ROOT
-git clone https://github.com/researchit/spack-etc.git /opt/spack-etc
-ln -s /opt/spack-etc/*.yaml $SPACK_ROOT/etc/spack/
-sed -i 's/rhel7/centos7/g' $SPACK_ROOT/etc/spack/compilers.yaml
+if [ ! -d "$SPACK_ROOT" ]; then
+  git clone https://github.com/spack/spack.git $SPACK_ROOT
+  spack compiler find $(which gcc)
+  spack compiler find $(which g++)
+  spack compiler find $(which gfortran)
 
-source $SPACK_ROOT/share/spack/setup-env.sh
-spack install busco@3.0.1
+  #because i'm buildiing as root
+  export FORCE_UNSAFE_CONFIGURE=1
+
+  source $SPACK_ROOT/share/spack/setup-env.sh
+  spack install busco@3.0.1
+fi
+
+export BUSCODIR=$SPACK_ROOT/opt/spack/linux-centos7-x86_64/gcc-4.8.5/busco-3.0.1-cafwtkz5ryvlwnup3xzntotjwlrqsiui
+cp $BUSCODIR/config/config.ini.default $BUSCODIR/config/config.ini
 
 %runscript
-exec busco "$@"
+exec run_BUSCO.py "$@"
